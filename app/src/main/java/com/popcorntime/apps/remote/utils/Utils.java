@@ -8,8 +8,6 @@ package com.popcorntime.apps.remote.utils;
  * @developers Bruno Alassia, Pamela Prosperi
  */
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -30,9 +28,13 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.util.Patterns;
 import android.util.TypedValue;
 import android.widget.Toast;
+
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
+import com.thetransactioncompany.jsonrpc2.client.JSONRPC2Session;
+import com.thetransactioncompany.jsonrpc2.client.JSONRPC2SessionException;
 
 import org.apache.http.conn.util.InetAddressUtils;
 
@@ -47,10 +49,34 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Map;
 
 public abstract class Utils {
+
+    private static int requestID = 1;
+
+    public static JSONRPC2Response sendRequest(JSONRPC2Session mSession, String method, Map<String, Object> params) {
+        if(params == null) {
+            params = new HashMap<String, Object>();
+        }
+        mSession.getOptions().setRequestContentType("application/json");
+        JSONRPC2Request request = new JSONRPC2Request(method, params, requestID);
+
+        // Send request
+        JSONRPC2Response response = null;
+
+        try {
+            response = mSession.send(request);
+        } catch (JSONRPC2SessionException e) {
+            e.printStackTrace();
+        }
+
+        requestID++;
+
+        return response;
+    }
 
     /**
      * Get IP address from first non-localhost interface

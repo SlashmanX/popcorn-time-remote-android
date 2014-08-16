@@ -1,46 +1,50 @@
 package com.popcorntime.apps.remote;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Base64;
+import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 
-import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
-import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
-import com.thetransactioncompany.jsonrpc2.client.ConnectionConfigurator;
+import com.popcorntime.apps.remote.utils.BasicAuthenticator;
+import com.popcorntime.apps.remote.utils.Utils;
 import com.thetransactioncompany.jsonrpc2.client.JSONRPC2Session;
-import com.thetransactioncompany.jsonrpc2.client.JSONRPC2SessionException;
 
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 
 public class Main extends Activity {
 
-    private String IP = "http://192.168.88.224";
-    private String PORT = "8008";
     private JSONRPC2Session mSession;
     private ImageButton enterBtt, leftBtt, rightBtt, upBtt, downBtt, backBtt;
-    int requestID = 0;
+    int requestID = 1;
+    private SharedPreferences sharedPref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Utils.Log("MAIN CREATED!!!!!");
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        String ip = sharedPref.getString(getString(R.string.pref_ip), "http://127.0.0.1");
+        String port = sharedPref.getString(getString(R.string.pref_port), "8008");
+        String user = sharedPref.getString(getString(R.string.pref_username), "pocho");
+        String pass = sharedPref.getString(getString(R.string.pref_password), "popcorn");
         URL serverURL = null;
         try {
-            serverURL = new URL(IP +":"+ PORT);
+            serverURL = new URL(ip +":"+ port);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
 
         mSession = new JSONRPC2Session(serverURL);
+        BasicAuthenticator auth = new BasicAuthenticator();
+        auth.setCredentials(user, pass);
+        mSession.setConnectionConfigurator(auth);
         enterBtt = (ImageButton) findViewById(R.id.enterBtt);
         leftBtt = (ImageButton) findViewById(R.id.leftBtt);
         rightBtt = (ImageButton) findViewById(R.id.rightBtt);
@@ -51,49 +55,49 @@ public class Main extends Activity {
         enterBtt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendRequest("enter");
+                Utils.sendRequest(mSession, "enter", null);
             }
         });
 
         upBtt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendRequest("up");
+                Utils.sendRequest(mSession, "up", null);
             }
         });
 
         enterBtt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendRequest("enter");
+                Utils.sendRequest(mSession, "enter", null);
             }
         });
 
         leftBtt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendRequest("left");
+                Utils.sendRequest(mSession, "left", null);
             }
         });
 
         rightBtt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendRequest("right");
+                Utils.sendRequest(mSession, "right", null);
             }
         });
 
         downBtt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendRequest("down");
+                Utils.sendRequest(mSession, "down", null);
             }
         });
 
         backBtt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendRequest("backspace");
+                Utils.sendRequest(mSession, "back", null);
             }
         });
     }
@@ -116,44 +120,5 @@ public class Main extends Activity {
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    public void sendRequest(String method) {
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put("Param1", "value1");
-        mSession.setConnectionConfigurator(new BasicAuthenticator());
-        JSONRPC2Request request = new JSONRPC2Request(method, params, requestID);
-
-        // Send request
-        JSONRPC2Response response = null;
-
-        try {
-            response = mSession.send(request);
-
-        } catch (JSONRPC2SessionException e) {
-
-            System.err.println(e.getMessage());
-            // handle exception...
-        }
-
-        // Print response result / error
-        if (response != null && response.indicatesSuccess())
-            System.out.println(response.getResult());
-        else
-            System.out.println(response.getError().getMessage());
-    }
-}
-
-class BasicAuthenticator implements ConnectionConfigurator {
-
-    private String user = "pocho";
-    private String pass = "popcorn";
-    public void configure(HttpURLConnection connection) {
-
-
-        byte[] encodedBytes = Base64.encode((user+":"+pass).getBytes(), Base64.DEFAULT);
-
-        // add custom HTTP header
-        connection.addRequestProperty("Authorization", "Basic "+ new String(encodedBytes));
     }
 }
